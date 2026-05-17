@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Maze — Step 1: The Grid</title>
+  <style>
+
+    body {
+      background: #0f0f13;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      font-family: monospace;
+      color: #e8e6df;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #c8f0c0;
+      letter-spacing: 0.1em;
+    }
+
+    canvas {
+      border: 1px solid #2a2a36;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Maze Grid</h1>
+
+  <canvas id="mazeCanvas"></canvas>
+
+  <script>
+
+
+    const R    = 15;   // 15 rows
+    const C    = 20;   // 20 columns
+    const CELL = 30;   // each room is 30x30 pixels
+
+
+    const canvas = document.getElementById('mazeCanvas');
+    canvas.width  = C * CELL;   // e.g. 20 columns × 30px = 600px wide
+    canvas.height = R * CELL;   // e.g. 15 rows    × 30px = 450px tall
+
+    const ctx = canvas.getContext('2d');
+
+
+    //  northWall[r][c] = true  means that the TOP wall of room (r,c) is intact
+    //  eastWall[r][c]  = true  means that the RIGHT wall of room (r,c) is intact
+    //  We start with ALL walls intact (true), so that every wall is up and it is a fully closed grid
+
+    const northWall = [];
+    const eastWall  = [];
+
+    for (let r = 0; r < R; r++) {
+      // For each row, create an array of C values, all set to true
+      northWall[r] = new Array(C).fill(true);
+      eastWall[r]  = new Array(C).fill(true);
+    }
+
+    //  visited[r][c] = false means the mouse hasn't been here yet.
+
+
+    const visited = [];
+
+    for (let r = 0; r < R; r++) {
+      visited[r] = new Array(C).fill(false);
+    }
+
+
+    //  This function looks at northWall and eastWall and draws a line wherever a wall is true.
+    function drawMaze() {
+
+      ctx.fillStyle = '#0f0f13';  
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#c8f0c0'; 
+      ctx.lineWidth   = 1.5;
+
+      // Draw the outer border of the maze (the 4 edges)
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // This loop through every room and draw its walls
+      for (let r = 0; r < R; r++) {
+        for (let c = 0; c < C; c++) {
+
+          // Calculate the pixel position of this room's top-left corner
+          const x = c * CELL;
+          const y = r * CELL;
+
+          //  Draw north wall (horizontal line at the TOP of the room) 
+          if (northWall[r][c] === true) {
+            ctx.beginPath();
+            ctx.moveTo(x,        y);   // start at top-left of room
+            ctx.lineTo(x + CELL, y);   // draw right to top-right of room
+            ctx.stroke();
+          }
+
+          // Draw east wall (vertical line at the RIGHT of the room) 
+          if (eastWall[r][c] === true) {
+            ctx.beginPath();
+            ctx.moveTo(x + CELL, y);        // start at top-right of room
+            ctx.lineTo(x + CELL, y + CELL); // draw down to bottom-right
+            ctx.stroke();
+          }
+
+        }
+      }
+    }
+
+
+    drawMaze();
+
+  </script>
+
+</body>
+</html>
