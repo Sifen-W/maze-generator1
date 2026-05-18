@@ -1,119 +1,286 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Maze — Step 1: The Grid</title>
-  <style>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Maze — Step 1: The Grid</title>
+    <style>
+      body {
+        background: #0f0f13;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px;
+        font-family: monospace;
+        color: #e8e6df;
+      }
 
-    body {
-      background: #0f0f13;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-      font-family: monospace;
-      color: #e8e6df;
-    }
+      h1 {
+        margin-bottom: 20px;
+        color: #c8f0c0;
+        letter-spacing: 0.1em;
+      }
 
-    h1 {
-      margin-bottom: 20px;
-      color: #c8f0c0;
-      letter-spacing: 0.1em;
-    }
+      #status {
+        margin-bottom: 16px;
+        color: #6b6b72;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        min-height: 18px;
+      }
 
-    canvas {
-      border: 1px solid #2a2a36;
-    }
-  </style>
-</head>
-<body>
+      button {
+        margin-bottom: 20px;
+        background: #1c1c24;
+        border: 1px solid #3a3a46;
+        color: #c8f0c0;
+        padding: 10px 28px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        text-transform: uppercase;
+      }
+      button:hover {
+        background: #28283a;
+        border-color: #7ed47e;
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
 
-  <h1>Maze Grid</h1>
+      canvas {
+        border: 1px solid #2a2a36;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Maze Grid</h1>
+    <p id="status">Press the button to generate a maze.</p>
+    <button id="btn-generate">Generate Maze</button>
+    <canvas id="mazeCanvas"></canvas>
 
-  <canvas id="mazeCanvas"></canvas>
+    <canvas id="mazeCanvas"></canvas>
 
-  <script>
+    <script>
+      const R = 15; // 15 rows
+      const C = 20; // 20 columns
+      const CELL = 30; // each room is 30x30 pixels
 
+      const canvas = document.getElementById("mazeCanvas");
+      canvas.width = C * CELL; // e.g. 20 columns × 30px = 600px wide
+      canvas.height = R * CELL; // e.g. 15 rows    × 30px = 450px tall
 
-    const R    = 15;   // 15 rows
-    const C    = 20;   // 20 columns
-    const CELL = 30;   // each room is 30x30 pixels
+      const ctx = canvas.getContext("2d");
 
+      //  northWall[r][c] = true  means that the TOP wall of room (r,c) is intact
+      //  eastWall[r][c]  = true  means that the RIGHT wall of room (r,c) is intact
+      //  We start with ALL walls intact (true), so that every wall is up and it is a fully closed grid
 
-    const canvas = document.getElementById('mazeCanvas');
-    canvas.width  = C * CELL;   // e.g. 20 columns × 30px = 600px wide
-    canvas.height = R * CELL;   // e.g. 15 rows    × 30px = 450px tall
+      const northWall = [];
+      const eastWall = [];
+      const visited = [];
 
-    const ctx = canvas.getContext('2d');
-
-
-    //  northWall[r][c] = true  means that the TOP wall of room (r,c) is intact
-    //  eastWall[r][c]  = true  means that the RIGHT wall of room (r,c) is intact
-    //  We start with ALL walls intact (true), so that every wall is up and it is a fully closed grid
-
-    const northWall = [];
-    const eastWall  = [];
-
-    for (let r = 0; r < R; r++) {
-      // For each row, create an array of C values, all set to true
-      northWall[r] = new Array(C).fill(true);
-      eastWall[r]  = new Array(C).fill(true);
-    }
-
-    //  visited[r][c] = false means the mouse hasn't been here yet.
-
-
-    const visited = [];
-
-    for (let r = 0; r < R; r++) {
-      visited[r] = new Array(C).fill(false);
-    }
-
-
-    //  This function looks at northWall and eastWall and draws a line wherever a wall is true.
-    function drawMaze() {
-
-      ctx.fillStyle = '#0f0f13';  
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.strokeStyle = '#c8f0c0'; 
-      ctx.lineWidth   = 1.5;
-
-      // Draw the outer border of the maze (the 4 edges)
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-      // This loop through every room and draw its walls
-      for (let r = 0; r < R; r++) {
-        for (let c = 0; c < C; c++) {
-
-          // Calculate the pixel position of this room's top-left corner
-          const x = c * CELL;
-          const y = r * CELL;
-
-          //  Draw north wall (horizontal line at the TOP of the room) 
-          if (northWall[r][c] === true) {
-            ctx.beginPath();
-            ctx.moveTo(x,        y);   // start at top-left of room
-            ctx.lineTo(x + CELL, y);   // draw right to top-right of room
-            ctx.stroke();
-          }
-
-          // Draw east wall (vertical line at the RIGHT of the room) 
-          if (eastWall[r][c] === true) {
-            ctx.beginPath();
-            ctx.moveTo(x + CELL, y);        // start at top-right of room
-            ctx.lineTo(x + CELL, y + CELL); // draw down to bottom-right
-            ctx.stroke();
-          }
-
+      function initArrays() {
+        // to reset the maze before generating a new one
+        // For each row, create an array of C values, all set to true
+        //  visited[r][c] = false means the mouse hasn't been here yet.
+        for (let r = 0; r < R; r++) {
+          northWall[r] = new Array(C).fill(true);
+          eastWall[r] = new Array(C).fill(true);
+          visited[r] = new Array(C).fill(false);
         }
       }
-    }
 
+      //  This function looks at northWall and eastWall and draws a line wherever a wall is true.
+      function drawMaze() {
+        ctx.fillStyle = "#0f0f13";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    drawMaze();
+        ctx.strokeStyle = "#c8f0c0";
+        ctx.lineWidth = 1.5;
 
-  </script>
+        // Draw the outer border of the maze (the 4 edges)
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-</body>
+        // This loop through every room and draw its walls
+        for (let r = 0; r < R; r++) {
+          for (let c = 0; c < C; c++) {
+            // Calculate the pixel position of this room's top-left corner
+            const x = c * CELL;
+            const y = r * CELL;
+
+            //  Draw north wall (horizontal line at the TOP of the room)
+            if (northWall[r][c] === true) {
+              ctx.beginPath();
+              ctx.moveTo(x, y); // start at top-left of room
+              ctx.lineTo(x + CELL, y); // draw right to top-right of room
+              ctx.stroke();
+            }
+
+            // Draw east wall (vertical line at the RIGHT of the room)
+            if (eastWall[r][c] === true) {
+              ctx.beginPath();
+              ctx.moveTo(x + CELL, y); // start at top-right of room
+              ctx.lineTo(x + CELL, y + CELL); // draw down to bottom-right
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      // Draw a colored circle in the center of a room
+      function drawDot(r, c, color, size = 0.28) {
+        const cx = c * CELL + CELL / 2;
+        const cy = r * CELL + CELL / 2;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, CELL * size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      function setStatus(msg) {
+        document.getElementById("status").textContent = msg;
+      }
+      // Draw the initial grid when the page loads
+      initArrays();
+      drawMaze();
+
+      // animHandle lets us control the animation speed
+      let animHandle = null;
+      // entryR/C and exitR/C store the start and end of the maze
+      let entryR, entryC, exitR, exitC;
+
+      // gets unvisited neighbours
+      //  Each neighbour is returned as an object: { r, c }
+      function getUnvisitedNeighbours(r, c) {
+        const candidates = [
+          { r: r - 1, c: c }, // room to the NORTH
+          { r: r + 1, c: c }, // room to the SOUTH
+          { r: r, c: c - 1 }, // room to the WEST
+          { r: r, c: c + 1 }, // room to the EAST
+        ];
+        // Keep only neighbours that are inside the grid AND unvisited
+        return candidates.filter(
+          (n) =>
+            n.r >= 0 &&
+            n.r < R && // row must be 0 to R-1
+            n.c >= 0 &&
+            n.c < C && // col must be 0 to C-1
+            !visited[n.r][n.c], // must not have been visited
+        );
+      }
+
+      //Remove wall
+      //  Knock down the wall between room (r1,c1) and room (r2,c2)
+      function removeWall(r1, c1, r2, c2) {
+        if (r2 === r1 - 1) {
+          // Moving north - the wall between them is r1's north wall
+          northWall[r1][c1] = false;
+        } else if (r2 === r1 + 1) {
+          // Moving south - the wall between them is r2's north wall
+          northWall[r2][c2] = false;
+        } else if (c2 === c1 + 1) {
+          // Moving east - the wall between them is r1's east wall
+          eastWall[r1][c1] = false;
+        } else if (c2 === c1 - 1) {
+          // Moving west - the wall between them is r2's east wall
+          eastWall[r2][c2] = false;
+        }
+      }
+
+      function generateMaze() {
+        // Reset everything so we can generate a fresh maze
+        initArrays();
+        drawMaze();
+        setStatus("Generating maze… watch the mouse eat through walls!");
+
+        // Pick a random starting room for the mouse
+        let mouseR = Math.floor(Math.random() * R);
+        let mouseC = Math.floor(Math.random() * C);
+
+        // Mark starting room as visited
+        visited[mouseR][mouseC] = true;
+
+        // The stack stores rooms the mouse might need to return to
+        const stack = [{ r: mouseR, c: mouseC }];
+
+        // one tick of the animation
+        function step() {
+          // Find all unvisited neighbours of the mouse's current room
+          const neighbours = getUnvisitedNeighbours(mouseR, mouseC);
+
+          if (neighbours.length > 0) {
+            // Pick one randomly
+            const chosen =
+              neighbours[Math.floor(Math.random() * neighbours.length)];
+
+            // Save current room on the stack before moving (so we can come back here if we get trapped later)
+            stack.push({ r: mouseR, c: mouseC });
+
+            // Knock down the wall between current room and chosen room
+            removeWall(mouseR, mouseC, chosen.r, chosen.c);
+
+            // Move the mouse into the chosen room
+            mouseR = chosen.r;
+            mouseC = chosen.c;
+
+            // Mark the new room as visited
+            visited[mouseR][mouseC] = true;
+          } else {
+            // Dead end — all neighbours already visited
+            // Pop the stack to backtrack one step
+            if (stack.length === 0) {
+              // Stack is empty = every room has been visited = maze is done!
+              finishGeneration();
+              return;
+            }
+
+            const previous = stack.pop();
+            mouseR = previous.r;
+            mouseC = previous.c;
+          }
+
+          // Redraw the maze with the mouse's current position
+          drawMaze();
+          drawDot(mouseR, mouseC, "#7ed47e"); // green dot = mouse
+
+          // Wait a short time then run step() again
+          animHandle = setTimeout(step, 10);
+        }
+
+        // Kick off the first step
+        animHandle = setTimeout(step, 10);
+      }
+
+      //  Opens the entrance and exit of the maze by removing  one wall on the border, then draws yellow dots to mark them.
+      function finishGeneration() {
+        // Entry: top-left room, open its north wall (gap in top border)
+        entryR = 0;
+        entryC = 0;
+        northWall[entryR][entryC] = false;
+
+        // Exit: bottom-right room, open its east wall (gap in right border)
+        exitR = R - 1;
+        exitC = C - 1;
+        eastWall[exitR][exitC] = false;
+
+        // Redraw the maze with the openings visible
+        drawMaze();
+
+        // Draw yellow dots at entry and exit
+        drawDot(entryR, entryC, "#f0c060", 0.32);
+        drawDot(exitR, exitC, "#f0c060", 0.32);
+
+        setStatus("Maze complete!");
+        document.getElementById("btn-generate").disabled = false;
+      }
+      //Button handler
+      document.getElementById("btn-generate").addEventListener("click", () => {
+        if (animHandle) clearTimeout(animHandle);
+        document.getElementById("btn-generate").disabled = true;
+        generateMaze();
+      });
+    </script>
+  </body>
 </html>
