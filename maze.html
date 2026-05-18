@@ -289,6 +289,78 @@
         document.getElementById("btn-generate").disabled = true;
         generateMaze();
       });
+      //  For each of the 4 directions we check two things:
+//    1. Are we still inside the grid?
+//    2. Is the wall between us and that room knocked down?
+function getAccessibleNeighbours(r, c, solverVisited) {
+  const result = [];
+
+  // NORTH: room above exists AND north wall is removed AND not visited
+  if (r > 0 && !northWall[r][c] && !solverVisited[r - 1][c])
+    result.push({ r: r - 1, c: c });
+
+  // SOUTH: room below exists AND its north wall is removed AND not visited
+  if (r < R - 1 && !northWall[r + 1][c] && !solverVisited[r + 1][c])
+    result.push({ r: r + 1, c: c });
+
+  // EAST: room to the right exists AND east wall is removed AND not visited
+  if (c < C - 1 && !eastWall[r][c] && !solverVisited[r][c + 1])
+    result.push({ r: r, c: c + 1 });
+
+  // WEST: room to the left exists AND that room's east wall is removed AND not visited
+  if (c > 0 && !eastWall[r][c - 1] && !solverVisited[r][c - 1])
+    result.push({ r: r, c: c - 1 });
+
+  return result;
+}
+
+
+// VARIABLES: solver state 
+//  solverVisited tracks where the SOLVER has been.
+//  solverPath is the stack of rooms the solver is currently on.
+let solverVisited = [];
+let solverPath    = [];
+
+//  Sets up a fresh solverVisited grid and starts
+// the solverPath at the entry room.
+function initSolver() {
+  solverVisited = [];
+  for (let r = 0; r < R; r++) {
+    solverVisited[r] = new Array(C).fill(false);
+  }
+  // Start the path at the entry room
+  solverPath = [{ r: entryR, c: entryC }];
+  solverVisited[entryR][entryC] = true;
+}
+
+
+//  This is ONE step of the solver.
+function solverStep() {
+  // Where is the solver right now? Top of the path stack.
+  const curr = solverPath[solverPath.length - 1];
+
+  // Did we reach the exit?
+  if (curr.r === exitR && curr.c === exitC) {
+    return "found";
+  }
+
+  // Find all rooms we can physically walk into from here
+  const moves = getAccessibleNeighbours(curr.r, curr.c, solverVisited);
+
+  if (moves.length > 0) {
+    // Pick one randomly and move there
+    const next = moves[Math.floor(Math.random() * moves.length)];
+    solverVisited[next.r][next.c] = true;
+    solverPath.push(next);
+  } else {
+    // Dead end — backtrack by popping the path stack
+    solverPath.pop();
+    if (solverPath.length === 0) return "failed";
+  }
+
+  return "continue";
+}
+
     </script>
   </body>
 </html>
