@@ -58,9 +58,10 @@
   <body>
     <h1>Maze Grid</h1>
     <p id="status">Press the button to generate a maze.</p>
-    <button id="btn-generate">Generate Maze</button>
-    <canvas id="mazeCanvas"></canvas>
-
+    <div style="display: flex; gap: 12px; margin-bottom: 20px">
+      <button id="btn-generate">Generate Maze</button>
+      <button id="btn-solve" disabled>Solve Maze</button>
+    </div>
     <canvas id="mazeCanvas"></canvas>
 
     <script>
@@ -195,6 +196,10 @@
         drawMaze();
         setStatus("Generating maze… watch the mouse eat through walls!");
 
+        // Disable buttons while generating
+        document.getElementById("btn-generate").disabled = true;
+        document.getElementById("btn-solve").disabled    = true;
+
         // Pick a random starting room for the mouse
         let mouseR = Math.floor(Math.random() * R);
         let mouseC = Math.floor(Math.random() * C);
@@ -272,8 +277,11 @@
         drawDot(entryR, entryC, "#f0c060", 0.32);
         drawDot(exitR, exitC, "#f0c060", 0.32);
 
-        setStatus("Maze complete!");
+        setStatus("Maze complete! Press Solve Maze.");
+        // Re-enable buttons after generation finishes
         document.getElementById("btn-generate").disabled = false;
+        document.getElementById("btn-solve").disabled    = false;
+     
       }
       //Button handler
       document.getElementById("btn-generate").addEventListener("click", () => {
