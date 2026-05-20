@@ -361,6 +361,85 @@ function solverStep() {
   return "continue";
 }
 
+//  Redraws the whole maze fresh then overlays colored dots:
+function drawSolverState() {
+  // Always start with a clean maze redraw
+  drawMaze();
+
+  // Keep entry and exit markers visible at all times
+  drawDot(entryR, entryC, "#f0c060", 0.32);
+  drawDot(exitR, exitC, "#f0c060", 0.32);
+
+  // Build a quick lookup of which rooms are on the active path right now
+  const onPath = new Set(solverPath.map((p) => p.r + "," + p.c));
+
+  // Loop through every room the solver has visited and color it
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      if (solverVisited[r][c]) {
+        if (onPath.has(r + "," + c)) {
+          // This room is on the active path - RED
+          drawDot(r, c, "#e05858", 0.22);
+        } else {
+          // This room was visited but abandoned - BLUE (dead end)
+          drawDot(r, c, "#3b6fe0", 0.18);
+        }
+      }
+    }
+  }
+
+  // Draw the current head of the path slightly bigger and brighter
+  // so it is easy to see exactly where the solver is right now
+  if (solverPath.length > 0) {
+    const head = solverPath[solverPath.length - 1];
+    drawDot(head.r, head.c, "#ff6060", 0.30);
+  }
+}
+
+
+//  The animation loop for the solver.
+function runSolver() {
+  initSolver();
+
+  setStatus("Solving…  red = active path,  blue = dead end");
+
+  // Disable both buttons while solving is running
+  document.getElementById("btn-solve").disabled    = true;
+  document.getElementById("btn-generate").disabled = true;
+
+  function tick() {
+    const result = solverStep();
+
+    if (result === "found") {
+      // Solver reached the exit — draw final state and show message
+      drawSolverState();
+      setStatus("Solved! Path length: " + solverPath.length + " steps.");
+      document.getElementById("btn-generate").disabled = false;
+      return; // stop the animation
+
+    } else if (result === "failed") {
+      // No path found (should not happen in a proper maze)
+      setStatus("No path found.");
+      document.getElementById("btn-generate").disabled = false;
+      return; // stop the animation
+
+    } else {
+      // Still going — draw current state and schedule next tick
+      drawSolverState();
+      animHandle = setTimeout(tick, 12);
+    }
+  }
+
+  // Kick off the first tick
+  animHandle = setTimeout(tick, 12);
+}
+
+//  Button handler
+document.getElementById("btn-solve").addEventListener("click", () => {
+  if (animHandle) clearTimeout(animHandle);
+  runSolver();
+});
+
     </script>
   </body>
 </html>
