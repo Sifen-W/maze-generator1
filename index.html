@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Maze — Step 1: The Grid</title>
+ <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <h1>Maze Grid</h1>
+  <p id="status">Press the button to generate a maze.</p>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:20px;">
+
+    <!-- Buttons side by side -->
+    <div style="display:flex; gap:12px;">
+      <button id="btn-generate">Generate Maze</button>
+      <button id="btn-solve" disabled>Solve Maze</button>
+    </div>
+
+    <!-- Bonus mode checkbox -->
+    <label style="color:#6b6b72; font-size:0.8rem; display:flex; align-items:center; gap:6px;">
+      <input type="checkbox" id="chk-bonus" />
+      Bonus mode — eat extra walls (breaks shoulder rule)
+    </label>
+
+  </div>
+  <canvas id="mazeCanvas"></canvas>
+  <!-- Color legend sits right below the canvas -->
+  <div
+    style="display:flex; gap:20px; margin-top:10px; font-size:0.72rem; color:#6b6b72; flex-wrap:wrap; justify-content:center;">
+    <span>
+      <span
+        style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#7ed47e; margin-right:5px; vertical-align:middle;"></span>
+      Generator mouse
+    </span>
+    <span>
+      <span
+        style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#e05858; margin-right:5px; vertical-align:middle;"></span>
+      Active path
+    </span>
+    <span>
+      <span
+        style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#3b6fe0; margin-right:5px; vertical-align:middle;"></span>
+      Dead end
+    </span>
+    <span>
+      <span
+        style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f0c060; margin-right:5px; vertical-align:middle;"></span>
+      Start / Exit
+    </span>
+  </div>
+
+    <script src="maze.js"></script>
+</body>
+
+</html>
